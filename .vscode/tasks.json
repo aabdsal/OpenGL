@@ -1,0 +1,35 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "cppbuild",
+            "label": "Compilar OpenGL",
+            "command": "/usr/bin/clang++",
+            "args": [
+                "-std=c++17",
+                "-stdlib=libc++",
+                "-fdiagnostics-color=always",
+                "-g",
+                "${file}",
+                "-o",
+                "${fileDirname}/${fileBasenameNoExtension}",
+                "-I${workspaceFolder}/codebase",
+                "-I/opt/homebrew/include",
+                "-L/opt/homebrew/lib",
+                "-lfreeimage",
+                "-framework", "GLUT",
+                "-framework", "OpenGL",
+                "-Wno-deprecated"
+            ],
+            "options": {
+                "cwd": "${fileDirname}"
+            },
+            "problemMatcher": ["$gcc"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Compilador clang++ con frameworks OpenGL y GLUT"
+        }
+    ]
+}

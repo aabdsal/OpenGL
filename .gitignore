@@ -33,7 +33,6 @@
 *.app
 
 # Visual
-.vs/*
 *.recipe
 *.iobj
 *.log
@@ -42,3 +41,4 @@
 *.lastbuildstate.bak
 ./*/Release
 ./*/Debug
+*.dSYM

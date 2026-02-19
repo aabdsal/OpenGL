@@ -21,16 +21,21 @@ Este documento sirve como guía para configurar y desarrollar las prácticas de 
     ```bash
     xcode-select --install
     ```
-2.  **VS Code**: Descárgalo de [code.visualstudio.com](https://code.visualstudio.com/).
-3.  **Extensión C/C++**: En VS Code, instala la extensión oficial de Microsoft (ms-vscode.cpptools).
+2. **Homebrew (Gestor de paquetes):** Abre una terminal y pega el siguiente comando:
+    ```bash
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    ```
+3.  **VS Code**: Descárgalo de [code.visualstudio.com](https://code.visualstudio.com/).
+4.  **Extensión C/C++**: En VS Code, instala la extensión oficial de Microsoft (ms-vscode.cpptools).
+5.  **Librería Freeimage**: En la terminal, ejecuta este comando para instalar Freeimage, ```brew install freeimage```
 
 ## Compilación y Ejecución
 
 **Desde Terminal Manualmente:**
 Si prefieres no usar tareas de VS Code:
 ```bash
-g++ Primer_Proyecto.cpp -o Primer_Proyecto -framework GLUT -framework OpenGL -Wno-deprecated
-./Primer_Proyecto
+g++ main.cpp -o main -I/opt/homebrew/include -L/opt/homebrew/lib -lfreeimage -framework GLUT -framework OpenGL -Wno-deprecated
+./main
 ```
 **Desde VS Code:** 
 
@@ -56,6 +61,10 @@ Crea `.vscode/tasks.json`:
                 "${file}",
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}",
+                "-I${workspaceFolder}/codebase",
+                "-I/opt/homebrew/include",
+                "-L/opt/homebrew/lib",
+                "-lfreeimage",
                 "-framework", "GLUT",
                 "-framework", "OpenGL",
                 "-Wno-deprecated"
@@ -111,6 +120,7 @@ Crea `.vscode/c_cpp_properties.json`:
             "name": "Mac",
             "includePath": [
                 "${workspaceFolder}/**"
+                "/opt/homebrew/include"
             ],
             "defines": [
                 "__APPLE__"
