@@ -15,12 +15,13 @@
 #include <array>
 
 #ifdef __APPLE__
-#include <GLUT/glut.h>
+    #include <GLUT/glut.h>
+    #include <FreeImage.h>
 #else
-#include <GL/glut.h>
+    #include <GL/freeglut.h>
+    #include <GL/glext.h>
+    #include <freeimage/FreeImage.h>
 #endif
-
-#include <FreeImage.h>
 
 using namespace std;
 

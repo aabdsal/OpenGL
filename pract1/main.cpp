@@ -18,11 +18,14 @@ void display()
 {
 	glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
+	glLoadIdentity();
+	//drawAxes
 	glPushMatrix();
-	glRotated(angle, 1,1,1);
-	glutWireTorus(0.5, 1.0, 20, 20);
+	glRotatef(angle, 1, 0, 0);
+	glTranslatef((angle/180) * 3, 0.0 , 0.0);
+	glutWireTeapot(0.5);
 	glPopMatrix();
-	glFlush();
+	glutSwapBuffers();
 }
 void timer(int){
 	angle += 0.5;

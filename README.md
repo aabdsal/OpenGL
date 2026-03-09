@@ -140,15 +140,3 @@ Crea `.vscode/c_cpp_properties.json`:
 ```
 
 Ahora desde el boton de Run & Debug deberías de poder compilar y ejecutar el programa.
-
-
-## Extra
-Para que el código funcione tanto en Windows como en macOS, se pueden añadir directivas de preprocesador en `Primer_Proyecto.cpp`:
-
-```cpp
-#ifdef __APPLE__
-    #include <GLUT/glut.h>
-#else
-    #include <codebase.h>
-#endif
-```
