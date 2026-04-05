@@ -11,7 +11,7 @@
 
 #include <iostream>	
 #include "../codebase.h"
-#include "Engranajes.h"
+#include "../Engranajes.h"
 
 
 using namespace std;
@@ -30,6 +30,12 @@ static const float DPRIMITIVO = 1.7;
 static const float DENGRANAJES = 1.2;
 static const float DEJE = 0.7;
 static const float GROSOR = 0.3;
+
+// consola
+char c;
+char personalizada;
+int choice;
+Vec3 pos;
 
 void crearEngranaje(float NDIENTES)
 {
@@ -129,15 +135,73 @@ void crearEngranaje(float NDIENTES)
     glEndList();
 
 }
+
+void consola()
+{
+    cout << endl << "-- ATENCIÓN: SI QUIERES CAMBIAR LAS OPCIONES, PULSA LA TECLA R EN LA VENTANA DEL ENGRANAJE PARA RESETEAR EL MENÚ --" << endl << endl;
+    
+    while(personalizada != 'Y' && personalizada != 'N' && personalizada != 'y' && personalizada != 'n')
+    {
+        cout << "Quieres cargar vistas personalizadas? [y/n] ";
+        cin >> personalizada;
+    }
+
+    if(personalizada == 'n' || personalizada == 'N')
+    {
+        cout << "Pues elige entre una de estas 4 vistas predefinidas: " << endl;
+        cout << "1. Vista frontal ortográfica." << endl;
+        cout << "2. Vista de perfil ortográfica." << endl;
+        cout << "3. Vista cenital ortográfica." << endl;
+        cout << "4. Vista perspectiva." << endl;
+
+        cout << "Dime la vista que quieres. [1, 2, 3 o 4] " ;
+        cin >> choice;
+        switch (choice)
+        {
+        case 1:
+            c = 'o';
+            pos = {0, 0, 4};
+            break;
+        case 2:
+            c = 'o';
+            pos = {4, 0, 0};
+            break;
+        case 3:
+            c = 'o';
+            pos = {0, 5, 1};
+            break;
+        case 4:
+            c = 'p';
+            pos = {3, 3, 3};
+            break;
+        
+        default:
+            break;
+        }
+    }
+    else
+    {
+        while(c != 'O' && c != 'P' && c != 'o' && c != 'p')
+        {
+            cout << "Quieres cámara perspectiva o ortográfica? [p/o] ";
+            cin >> c;
+        }
+
+        cout << endl << "Dime la posición en nº decimales que quieres poner la cámara: ";
+        cin >> pos.x >> pos.y >> pos.z;
+    }
+    
+}
+
 void init() // Inicializaciones
 {
-	cout << "GL version " << glGetString(GL_VERSION) << endl;
-
+    consola();
+	//cout << "GL version " << glGetString(GL_VERSION) << endl;
 	// Configuracion motor
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
-	//glCullFace(GL_BACK);
-	//glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glEnable(GL_CULL_FACE);
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
 	glEnable(GL_LIGHT1);
@@ -161,7 +225,7 @@ void init() // Inicializaciones
 	glShadeModel(GL_FLAT);
 	glEndList();
 
-    crearEngranaje(70);
+    crearEngranaje(50);
     GLuint engranajeGrande = engranaje;
 
     crearEngranaje(10);
@@ -169,38 +233,50 @@ void init() // Inicializaciones
 
     dosEngranajes = glGenLists(1);
     glNewList(dosEngranajes, GL_COMPILE);
+    glPushMatrix();
     glCallList(engranajeGrande);
     glTranslatef(DENGRANAJES, 0, 0);
     glScalef(0.3f, 0.3f, 0.3f);
     glCallList(engranajePeque);
+    glPopMatrix();
     glEndList();
 }
 
 void display() // Funcion de atencion al dibujo
-{
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+{  
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
+    gluLookAt(pos.x, pos.y, pos.z, 0, 0, 0, 0, 1, 0);
+
 	// Luces solidarias a la camara
-	GLfloat posicionL1[] = { 0,1,0,1 };
+	GLfloat posicionL1[] = {0, 1, 0, 1};
 	glLightfv(GL_LIGHT1, GL_POSITION, posicionL1);
 
-	Vec3 posicionCamara(0, 0, 4);
+	/*Vec3 posicionCamara(0, 0, 4);
 	posicionCamara = posicionCamara.rotX(rad(giroxCam));
 	posicionCamara = posicionCamara.rotY(rad(giroyCam));
-	gluLookAt(posicionCamara.x, posicionCamara.y, posicionCamara.z, 0, 0, 0, 0, 1, 0);
+	gluLookAt(posicionCamara.x, posicionCamara.y, posicionCamara.z, 0, 0, 0, 0, 1, 0);*/
 
 	// Luces fijas en la escena
-	GLfloat posicionL0[] = { 0, 1,0,0 };
+	GLfloat posicionL0[] = {0, 1, 0, 0};
 	glLightfv(GL_LIGHT0, GL_POSITION, posicionL0);
 
 	// Engranaje
 	glPushAttrib(GL_ALL_ATTRIB_BITS);
 	glCallList(materialEngranaje);
 
+    glPolygonMode(GL_FRONT,GL_FILL);
 	glCallList(dosEngranajes);
+
+    glPolygonMode(GL_FRONT, GL_LINE);
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, ROJO);
+    glPushMatrix();
+    glScalef(1.02f, 1.02f, 1.02f);
+    glCallList(dosEngranajes);
+    glPopMatrix();
 	glPopAttrib();
 
 	ejes();
@@ -214,67 +290,38 @@ void reshape(GLint w, GLint h) // Funcion de atencion al redimensionamiento
 	glViewport(0, 0, w, h);
 	float razon = (float)w / h;
 
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-    cout << "Dime el tipo de cámara, O/o para ortografica y P/p para perspectiva:";
-    char c;
-    cin >> c;
-    cout << endl << "Dime posición en la que quieres poner la camara: ";
-    GLuint pos[3];
-    for (int i = 0; i < 3; i++)
-    {
-        cin >> pos[i];
-    }
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
     if(c == 'P' || c == 'p')
     {
-        
+        gluPerspective(40, razon, 0.1, 20);
     }
     else if(c == 'O' || c == 'o')
     {
-
+        if(w < h)
+        {
+            glOrtho(-2, 2, -2/razon, 2/razon, -10,10);
+        }
+        else
+        {
+            glOrtho(-2*razon, 2*razon, -2, 2, -10,10);
+        }
     }
-	gluPerspective(40, razon, 0.1, 20);
 }
-
-
 void onKey(unsigned char tecla, int x, int y)
 {
-	switch (tecla) {
-	case 27:
-		exit(0);
+	switch (tecla) 
+    {
+	    case 'r':
+        c = '\0';
+        personalizada = '\0';
+        choice = 0;
+        consola();
+        glutReshapeWindow(glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT)); // ia
+        break;
 	}
 	glutPostRedisplay();
 }
-
-void onClick(int boton, int estado, int x, int y)
-{
-	// Almaceno la coordenada que se pulso
-	if (boton == GLUT_LEFT_BUTTON && estado == GLUT_DOWN) {
-		xanterior = x;
-		yanterior = y;
-		dragging = true;
-	}
-	else if (estado == GLUT_UP) dragging = false;
-}
-
-void onDrag(int x, int y)
-{
-	if (!dragging) return;
-
-	static const float pixel2grados = 1;
-
-	giroyCam += (x - xanterior) * pixel2grados;
-	giroxCam += (y - yanterior) * pixel2grados;
-	// Limitar la latitud a ]-90,90[
-	if (fabs(giroxCam) > 89) giroxCam = signo(giroxCam) * 89.0f;
-
-	xanterior = x;
-	yanterior = y;
-
-	glutPostRedisplay();
-
-}
-
 int main(int argc, char** argv) // Programa principal
 {
 	glutInit(&argc, argv);
@@ -282,12 +329,12 @@ int main(int argc, char** argv) // Programa principal
 	glutInitWindowSize(600, 600);
 	glutCreateWindow(PROYECTO);
 	init();
+
 	// Registro de callbacks	
 	glutDisplayFunc(display);
 	glutReshapeFunc(reshape);
-	glutKeyboardFunc(onKey);
-	glutMouseFunc(onClick);
-	glutMotionFunc(onDrag);
+    glutKeyboardFunc(onKey);
+
     //cout << "Hola mundo desde la terminal" << endl;
 	// Bucle de atencion a eventos
 	glutMainLoop();

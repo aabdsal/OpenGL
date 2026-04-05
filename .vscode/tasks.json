@@ -23,8 +23,8 @@
                 "-framework",
                 "OpenGL",
                 "-Wno-deprecated",
-                "&&",
-                "${fileDirname}/${fileBasenameNoExtension}",
+                //"&&",
+                //"${fileDirname}/${fileBasenameNoExtension}",
             ],
             "options": {
                 "cwd": "${fileDirname}"

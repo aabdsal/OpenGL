@@ -11,7 +11,7 @@
 #include <iostream>
 #include <vector>
 #include <array>
-#include "../codebase.h"
+#include "codebase.h"
 
 
 using namespace std;
