@@ -22,16 +22,14 @@
                 "GLUT",
                 "-framework",
                 "OpenGL",
-                "-Wno-deprecated",
-                //"&&",
-                //"${fileDirname}/${fileBasenameNoExtension}",
+                "-Wno-deprecated"
             ],
             "options": {
                 "cwd": "${fileDirname}"
             },
             "group": {
                 "kind": "build",
-                "isDefault": true
+                "isDefault": false
             },
             "presentation": {
                 "echo": false,
@@ -44,6 +42,30 @@
                 "$gcc"
             ],
             "detail": "Compilador clang++ con frameworks OpenGL, GLUT, FreeImage, SerialPort y uso de terminal"
+        },
+        {
+            "type": "cppbuild",
+            "label": "C/C++: clang++ compilar archivo activo",
+            "command": "/usr/bin/clang++",
+            "args": [
+                "-fcolor-diagnostics",
+                "-fansi-escape-codes",
+                "-g",
+                "${file}",
+                "-o",
+                "${fileDirname}/${fileBasenameNoExtension}"
+            ],
+            "options": {
+                "cwd": "${fileDirname}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Tarea generada por el depurador."
         }
     ]
 }
