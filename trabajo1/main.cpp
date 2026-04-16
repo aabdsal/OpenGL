@@ -1,48 +1,71 @@
 #define PROYECTO "Mecanismo animado"
 
-#include <iostream>	
 #include "../codebase.h"
-#include "../Engranajes.h"
 
 using namespace std;
 using namespace cb;
+
+vector<Vec3> puntosCircunferencia(float radio, float fase, unsigned int cantidad)
+{
+	vector<Vec3> puntos;
+	if (cantidad < 1) return puntos;
+
+	float angulo = 2 * PI / cantidad;
+	for (unsigned int i = 0; i < cantidad; i++) {
+		puntos.push_back(Vec3(radio * cosf(i * angulo + fase), radio * sinf(i * angulo + fase), 0));
+	}
+
+	return puntos;
+}
 
 // Listas para crear las geometrias necesarias
 static GLuint diente, cara, doscaras;
 static GLuint perfil1, perfil2, perfilT;
 static GLuint unaRueda, rueda;
-static GLuint engranaje, dosEngranajes, engranajeGrande, engranajePeque;
-static GLuint unPalo, Palos, PalosGrande, PalosPeque;
-static GLuint unaC, dosC, unionC, uniCT, eje_interno, interno_completo, reloj;
-static GLuint ManCorta, ManLarga;
+static GLuint engranaje, engranajeGrande, engranajePeque;
+static GLuint unPalo, palos, palosGrande, palosPeque;
+static GLuint pieza, unaC, dosC, unionC, uniCT, eje_interno, interno_completo, reloj;
+static GLuint manCorta, manLarga;
 
 vector<Vec3> ejesAux;
 
-// Datos para la generar el engranaje
+// Datos para la generar los engranajes
 static const float HDIENTE = 0.1f;
 static const float DPRIMITIVO = 1.7f;
-static const float DENGRANAJES = 1.20f;
-static const float GROSOR = 0.3f;
+static const float GROSOR = 0.3f; // ancho del engranaje, tambien lo uso para el ancho del reloj
+static const int NDIENTES_CORONA = 40;
+static const int NDIENTES_PINYON = 20;
+
+bool check = false;
+static const uint8_t delay = 2;
 
 // Velocidades y angulos para la animación
 static const float radio = 8.0f; 
-
-static float anguloGrande = 0.0f; 
 static float ojo[] = {0, 0, radio}; 
-static const float velocidadGrande = 2.0f*3.1415926f/60.0f; // Radio de giro de la camara y el engranaje grande
 static const int tasaFPS = 60;
 
-static float anguloPeque = 3.1415926f/20.0f; 
-static const float velocidadPeque = 0.2094333333f; // Radio de giro del engranaje pequeño, calculado por la relacion de las velocidades angulares y el numero de dientes con la grande.
+static float angCam = 0.0f; 
+static const float vCam = 2.0f*PI/60.0f; // vuelta por minuto
 
-static float anguloManLarga = 0.0f;
-static const float vManLarga = 0.2094333333f; 
+static float angCorona = 0.0f; 
+static const float vCorona = 2.0f*PI/60.0f; // vuelta por minuto
 
-void crearEngranaje(float NDIENTES, float DEJE)
+static float angPinyon = PI/NDIENTES_PINYON; // offset para que engranen correctamente desde el principio 
+static const float vPinyon = vCorona * (NDIENTES_CORONA)/(NDIENTES_PINYON); // velocidad proporcional a la de la corona
+
+static float angManLarga = 0.0f;
+static const float vManLarga = 2*PI/60.0f; // vuelta por minuto
+
+static float angManCorta = 0.0f;
+static const float vManCorta = 2*PI/3600.0f; // vuelta por minuto
+
+void onTimer(int valor);
+
+void crearEngranaje(int NDIENTES, float DEJE)
 {
-	vector<Vec3> picos = circlePoints(DPRIMITIVO / 2.0 + HDIENTE / 2.0, PI / 2.0, NDIENTES);
-	vector<Vec3> valles = circlePoints(DPRIMITIVO / 2.0 - HDIENTE / 2.0, PI / 2.0 - PI / NDIENTES, NDIENTES);
-	vector<Vec3> ejes = circlePoints(DEJE / 2.0, PI / 2.0, NDIENTES);
+	vector<Vec3> picos = puntosCircunferencia(DPRIMITIVO / 2.0 + HDIENTE / 2.0, PI / 2.0, NDIENTES);
+	vector<Vec3> valles = puntosCircunferencia(DPRIMITIVO / 2.0 - HDIENTE / 2.0, PI / 2.0 - PI / NDIENTES, NDIENTES);
+	vector<Vec3> ejes = puntosCircunferencia(DEJE / 2.0, PI / 2.0, NDIENTES);
 
     ejesAux = ejes;
 
@@ -80,19 +103,19 @@ void crearEngranaje(float NDIENTES, float DEJE)
     glNormal3f(valles[0].x, valles[0].y, 0.0f);
     glBegin(GL_QUADS);
         glVertex3fv(valles[0]);
-        glVertex3fv(valles[0] - Vec3(0, 0, -GROSOR));
-        glVertex3fv(picos[0]- Vec3(0,0, -GROSOR));
+        glVertex3fv(valles[0] + Vec3(0, 0, GROSOR));
+        glVertex3fv(picos[0] + Vec3(0,0, GROSOR));
         glVertex3fv(picos[0]);
     glEnd();
     glEndList();
 
     perfil2 = glGenLists(1);
     glNewList(perfil2, GL_COMPILE);
-    for (int i = 0; i < NDIENTES; i++)
-    {
-        glCallList(perfil1);
-        glRotatef(360.0f/NDIENTES, 0.0, 0.0f, 1.0f);
-    }
+        for (int i = 0; i < NDIENTES; i++)
+        {
+            glCallList(perfil1);
+            glRotatef(360.0f/NDIENTES, 0.0, 0.0f, 1.0f);
+        }
     glEndList();
 
     perfilT = glGenLists(1);
@@ -108,19 +131,19 @@ void crearEngranaje(float NDIENTES, float DEJE)
 	glNormal3f(-ejes[0].x, -ejes[0].y, 0.0f);
 	glBegin(GL_QUADS);
         glVertex3fv(ejes[0]);
-        glVertex3fv(ejes[0] - Vec3(0, 0, -GROSOR));
-        glVertex3fv(ejes[1] - Vec3(0, 0, -GROSOR));
+        glVertex3fv(ejes[0] + Vec3(0, 0, GROSOR));
+        glVertex3fv(ejes[1] + Vec3(0, 0, GROSOR));
         glVertex3fv(ejes[1]);
     glEnd();
 	glEndList();
 
     rueda = glGenLists(1);
     glNewList(rueda, GL_COMPILE);
-    for (int i = 0; i < NDIENTES; i++)
-    {
-        glCallList(unaRueda);
-        glRotatef(360.0f/NDIENTES, 0.0, 0.0f, 1.0f);
-    }
+        for (int i = 0; i < NDIENTES; i++)
+        {
+            glCallList(unaRueda);
+            glRotatef(360.0f/NDIENTES, 0.0, 0.0f, 1.0f);
+        }
     glEndList();
 
     engranaje = glGenLists(1);
@@ -132,35 +155,35 @@ void crearEngranaje(float NDIENTES, float DEJE)
 
 }
 
-void crearPalo(float Largo, float NDIENTES, vector<Vec3> ejes)
+void crearPalo(float Largo, int NDIENTES, vector<Vec3> &ejes)
 {
     unPalo = glGenLists(1);
     glNewList(unPalo, GL_COMPILE);
 	glBegin(GL_QUADS);
-	glVertex3fv(ejes[0]);
-	glVertex3fv(ejes[0] + Vec3(0, 0, Largo));
-	glVertex3fv(ejes[1] + Vec3(0, 0, Largo));
-    glVertex3fv(ejes[1]);
+        glVertex3fv(ejes[0]);
+        glVertex3fv(ejes[0] + Vec3(0, 0, Largo));
+        glVertex3fv(ejes[1] + Vec3(0, 0, Largo));
+        glVertex3fv(ejes[1]);
     glEnd();
     glEndList();
 
-    Palos = glGenLists(1);
-    glNewList(Palos, GL_COMPILE);
-    for (int i = 0; i < NDIENTES; i++)
-    {
-        glCallList(unPalo);
-        glRotatef(360.0f/NDIENTES, 0.0, 0.0f, 1.0f);
-    }
+    palos = glGenLists(1);
+    glNewList(palos, GL_COMPILE);
+        for (int i = 0; i < NDIENTES; i++)
+        {
+            glCallList(unPalo);
+            glRotatef(360.0f/NDIENTES, 0.0, 0.0f, 1.0f);
+        }
     glEndList();
 }
 
-void crearReloj(float NDIENTES, float DEJE)
+void crearReloj(int NDIENTES, float DEJE)
 {
-	vector<Vec3> valles = circlePoints(DPRIMITIVO / 2.0 - HDIENTE / 2.0, PI / 2.0 - PI / NDIENTES, NDIENTES);
-	vector<Vec3> ejes = circlePoints(DEJE / 2.0, PI / 2.0, NDIENTES);
+	vector<Vec3> valles = puntosCircunferencia(DPRIMITIVO / 2.0 - HDIENTE / 2.0, PI / 2.0 - PI / NDIENTES, NDIENTES);
+	vector<Vec3> ejes = puntosCircunferencia(DEJE / 2.0, PI / 2.0, NDIENTES);
 
-    diente = glGenLists(1);
-    glNewList(diente, GL_COMPILE);
+    pieza = glGenLists(1);
+    glNewList(pieza, GL_COMPILE);
     glNormal3f(0.0f, 0.0f, -1.0f);
     glBegin(GL_TRIANGLE_STRIP);
         glVertex3fv(valles[0]);
@@ -174,7 +197,7 @@ void crearReloj(float NDIENTES, float DEJE)
     glNewList(unaC, GL_COMPILE);
         for (int i = 0; i < NDIENTES; i++)
         {
-            glCallList(diente);
+            glCallList(pieza);
             glRotatef(360.0f/NDIENTES, 0.0, 0.0f, 1.0f);
         }
     glEndList();
@@ -192,8 +215,8 @@ void crearReloj(float NDIENTES, float DEJE)
     glNormal3f(valles[0].x, valles[0].y, 0.0f);
     glBegin(GL_QUADS);
         glVertex3fv(valles[0]);
-        glVertex3fv(valles[0] - Vec3(0, 0, -GROSOR));
-        glVertex3fv(valles[1]- Vec3(0,0, -GROSOR));
+        glVertex3fv(valles[0] + Vec3(0, 0, GROSOR));
+        glVertex3fv(valles[1] + Vec3(0,0, GROSOR));
         glVertex3fv(valles[1]);
     glEnd();
     glEndList();
@@ -212,8 +235,8 @@ void crearReloj(float NDIENTES, float DEJE)
 	glNormal3f(-ejes[0].x, -ejes[0].y, 0.0f);
 	glBegin(GL_QUADS);
         glVertex3fv(ejes[0]);
-        glVertex3fv(ejes[0] - Vec3(0, 0, -GROSOR));
-        glVertex3fv(ejes[1] - Vec3(0, 0, -GROSOR));
+        glVertex3fv(ejes[0] + Vec3(0, 0, GROSOR));
+        glVertex3fv(ejes[1] + Vec3(0, 0, GROSOR));
         glVertex3fv(ejes[1]);
     glEnd();
 	glEndList();
@@ -235,15 +258,15 @@ void crearReloj(float NDIENTES, float DEJE)
     glEndList();
 }
 
-void crearManecilla(float NDIENTES, float DEJE)
+void crearManecilla()
 {
-    float radioEsfera = DPRIMITIVO / 2.0f - HDIENTE / 2.0f;
-    float base = radioEsfera * 0.045f;
-    float paloCorto = radioEsfera * 0.45f;
-    float paloLargo = radioEsfera * 0.9f;
+    float radioReloj = DPRIMITIVO / 2.0f - HDIENTE / 2.0f; 
+    float base = radioReloj * 0.045f; // tamaño de la base
+    float paloCorto = radioReloj * 0.45f; // altura de la manecilla de las horas
+    float paloLargo = radioReloj * 0.9f; // altura de la manecilla de los minutos
 
-    ManCorta = glGenLists(1);
-    glNewList(ManCorta, GL_COMPILE);
+    manCorta = glGenLists(1);
+    glNewList(manCorta, GL_COMPILE);
     glNormal3f(0.0f, 0.0f, 1.0f);
     glBegin(GL_TRIANGLES);
         glVertex3f(-base, 0.0f, GROSOR);
@@ -252,8 +275,8 @@ void crearManecilla(float NDIENTES, float DEJE)
     glEnd();
     glEndList();
 
-    ManLarga = glGenLists(1);
-    glNewList(ManLarga, GL_COMPILE);
+    manLarga = glGenLists(1);
+    glNewList(manLarga, GL_COMPILE);
     glNormal3f(0.0f, 0.0f, 1.0f);
     glBegin(GL_TRIANGLES);
         glVertex3f(-base, 0.0f, GROSOR);
@@ -262,6 +285,7 @@ void crearManecilla(float NDIENTES, float DEJE)
     glEnd();
     glEndList();
 }
+
 void init() 
 {
 	glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
@@ -279,21 +303,20 @@ void init()
 	glLightfv(GL_LIGHT1, GL_SPECULAR, BLANCO);
 	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, GRISOSCURO);
 
-    crearEngranaje(40, 0.2f);
+    crearEngranaje(NDIENTES_CORONA, 0.2f);
     engranajeGrande = engranaje;
     
-    crearPalo(1.1f, 40, ejesAux);
-    PalosGrande = Palos;
+    crearPalo(1.1f, NDIENTES_CORONA, ejesAux);
+    palosGrande = palos;
 
-    crearEngranaje(20, 0.65f);
+    crearEngranaje(NDIENTES_PINYON, 0.65f);
     engranajePeque = engranaje;
 
-    crearPalo(4.3f, 20, ejesAux);
-    PalosPeque = Palos;
+    crearPalo(4.3f, NDIENTES_PINYON, ejesAux);
+    palosPeque = palos;
 
-    crearReloj(40, 0.08f);
-    crearManecilla(40, 0.08f);
-
+    crearReloj(NDIENTES_CORONA, 0.08f);
+    crearManecilla();
 }
 
 void display() 
@@ -309,90 +332,78 @@ void display()
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     
     glPushMatrix();
-        glRotatef(deg(anguloGrande), 0, 0, 1);
+        glRotatef(deg(angCorona), 0, 0, 1);
         glCallList(engranajeGrande);
     glPopMatrix();
 
+    glDisable(GL_LIGHTING);
     glPushMatrix();
-        glDisable(GL_LIGHTING);
         glColor3f(0.1f, 0.1f, 0.1f);
-        glCallList(PalosGrande);
-        glEnable(GL_LIGHTING);
+        glCallList(palosGrande);
     glPopMatrix();
 
     glPushMatrix();
         glTranslatef(0.0f, 0.0f, 1.05f);
         glScalef(0.3f, 0.3f, 0.3f);
-        glDisable(GL_LIGHTING);
         glColor3f(0.72f, 0.72f, 0.72f);
-        glRotatef(deg(anguloPeque), 0, 0, 1);
+        glRotatef(deg(angPinyon), 0, 0, 1);
         glCallList(engranajePeque);
-        glEnable(GL_LIGHTING);
     glPopMatrix();
+    glEnable(GL_LIGHTING);
 
     glPushMatrix();
         glTranslatef(-1.15f, 0.0f, 1.2f);
         glRotatef(180.0f, 0, 1, 0);
 
         glPushMatrix();
-            glRotatef(deg(anguloGrande), 0, 0, 1);
+            glRotatef(deg(angCorona), 0, 0, 1);
             glCallList(engranajeGrande);
         glPopMatrix();
 
+        glDisable(GL_LIGHTING);
         glPushMatrix();
-            glDisable(GL_LIGHTING);
             glColor3f(0.1f, 0.1f, 0.1f);
-            glCallList(PalosGrande);
-            glEnable(GL_LIGHTING);
+            glCallList(palosGrande);
         glPopMatrix();
 
         glPushMatrix();
             glTranslatef(0.0f, 0.0f, 1.05f);
             glScalef(0.3f, 0.3f, 0.3f);
-            glRotatef(deg(anguloPeque), 0, 0, 1);
-            glDisable(GL_LIGHTING);
+            glRotatef(deg(angPinyon), 0, 0, 1);
             glColor3f(0.72f, 0.72f, 0.72f);
             glCallList(engranajePeque);
-            glEnable(GL_LIGHTING);
         glPopMatrix();
 
         glPushMatrix();
             glTranslatef(0.0f, 0.0f, 1.05f);
             glScalef(0.3f, 0.3f, 0.3f);
-            glDisable(GL_LIGHTING);
             glColor3f(0.1f, 0.1f, 0.1f);
-            glCallList(PalosPeque); // donde se ubicara el reloj
-            glEnable(GL_LIGHTING);
+            glCallList(palosPeque); // donde se ubicara el reloj
         glPopMatrix();
     
         glPushMatrix();
             glTranslatef(0.0f, 0.0f, 1.5f);
             glScalef(2.5f, 2.5f, 2.5f);
-            glDisable(GL_LIGHTING);
             glColor3f(0.92f, 0.92f, 0.88f);
             glCallList(reloj);
-            glEnable(GL_LIGHTING);
         glPopMatrix();
 
         glPushMatrix();
             glTranslatef(0.0f, 0.0f, 1.52f);
-            glRotatef(-deg(anguloPeque * 0.2f), 0, 0, 1);
+            glRotatef(-deg(angManCorta), 0, 0, 1);
             glScalef(2.5f, 2.5f, 2.5f);
-            glDisable(GL_LIGHTING);
             glColor3f(0.05f, 0.05f, 0.05f);
-            glCallList(ManCorta);
-            glEnable(GL_LIGHTING);
+            glCallList(manCorta);
         glPopMatrix();
 
         glPushMatrix();
             glTranslatef(0.0f, 0.0f, 1.55f);
-            glRotatef(-deg(anguloPeque), 0, 0, 1);
+            glRotatef(-deg(angManLarga), 0, 0, 1);
             glScalef(2.5f, 2.5f, 2.5f);
-            glDisable(GL_LIGHTING);
             glColor3f(0.9f, 0.1f, 0.1f);
-            glCallList(ManLarga);
-            glEnable(GL_LIGHTING);
+            glCallList(manLarga);
         glPopMatrix();
+        glEnable(GL_LIGHTING);
     glPopMatrix();
 	
     glPopAttrib();
@@ -407,35 +418,41 @@ void reshape(GLint w, GLint h)
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 
-    gluPerspective(30, razon, 1, 30);
+    gluPerspective(30, razon, 1, 35);
+}
+
+void onIdle()
+{
+    static int antes = 0;
+
+    int ahora, tiempo_transcurrido;
+    ahora = glutGet(GLUT_ELAPSED_TIME); 
+    tiempo_transcurrido = ahora - antes;
+    
+    if(check)
+    {
+        angCam += vCam * (tiempo_transcurrido/1000.0);
+        ojo[0] = radio * sin(angCam);
+        ojo[2] = radio * cos(angCam);
+
+        angCorona += vCorona * (tiempo_transcurrido/1000.0);
+        
+        angPinyon += vPinyon * (tiempo_transcurrido/1000.0);
+        
+        angManLarga += vManLarga * (tiempo_transcurrido/1000.0);
+        
+        angManCorta += vManCorta * (tiempo_transcurrido/1000.0);
+
+        antes = ahora;
+    }
+    glutTimerFunc(1000/tasaFPS, onTimer, tasaFPS); 
+    glutPostRedisplay();
 }
 
 void onTimer(int valor)
 {
-    static int antes = 0;
-    static bool check = false;
-    
-    int ahora, tiempo_transcurrido;
-    ahora = glutGet(GLUT_ELAPSED_TIME); 
-    tiempo_transcurrido = ahora - antes; // Tiempo transcurrido desde el inicio
-    
-    if(tiempo_transcurrido > 2000)
-    {
-        check = true;
-    }
-    if(check)
-    {
-        // camara i el engranaje grande
-        anguloGrande += velocidadGrande * (tiempo_transcurrido/1000.0);
-        ojo[0] = radio * sin(anguloGrande);
-        ojo[2] = radio * cos(anguloGrande);
-
-        // engranaje pequeño
-        anguloPeque += velocidadPeque * (tiempo_transcurrido/1000.0);
-        antes = ahora;
-    }
-    glutTimerFunc(1000/tasaFPS , onTimer, tasaFPS); // Se encola un nuevo timer
-    glutPostRedisplay();
+    check = true;
+    onIdle();
 }
 
 int main(int argc, char** argv) // Programa principal
@@ -443,14 +460,14 @@ int main(int argc, char** argv) // Programa principal
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 	glutInitWindowSize(900, 600);
-    glutInitWindowPosition(1900, 600);
 	glutCreateWindow(PROYECTO);
     
     init();
 
 	glutDisplayFunc(display);
 	glutReshapeFunc(reshape);
-    glutTimerFunc(1000/tasaFPS, onTimer, tasaFPS); 
+    glutIdleFunc(onIdle);
+    glutTimerFunc(delay, onTimer, 0); 
 
 	glutMainLoop();
 }
