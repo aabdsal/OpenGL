@@ -1,22 +1,10 @@
 #define PROYECTO "Mecanismo animado"
 
-#include "../codebase.h"
+// cambiar en visual studio de windows por <codebase.h>, yo lo tengo en local
+#include "../codebase.h" 
 
 using namespace std;
 using namespace cb;
-
-vector<Vec3> puntosCircunferencia(float radio, float fase, unsigned int cantidad)
-{
-	vector<Vec3> puntos;
-	if (cantidad < 1) return puntos;
-
-	float angulo = 2 * PI / cantidad;
-	for (unsigned int i = 0; i < cantidad; i++) {
-		puntos.push_back(Vec3(radio * cosf(i * angulo + fase), radio * sinf(i * angulo + fase), 0));
-	}
-
-	return puntos;
-}
 
 // Listas para crear las geometrias necesarias
 static GLuint diente, cara, doscaras;
@@ -37,10 +25,10 @@ static const int NDIENTES_CORONA = 40;
 static const int NDIENTES_PINYON = 20;
 
 bool check = false;
-static const uint8_t delay = 2;
+static const unsigned int delay = 2000;
 
 // Velocidades y angulos para la animación
-static const float radio = 8.0f; 
+static const float radio = 9.0f; 
 static float ojo[] = {0, 0, radio}; 
 static const int tasaFPS = 60;
 
@@ -59,7 +47,22 @@ static const float vManLarga = 2*PI/60.0f; // vuelta por minuto
 static float angManCorta = 0.0f;
 static const float vManCorta = 2*PI/3600.0f; // vuelta por minuto
 
-void onTimer(int valor);
+vector<Vec3> puntosCircunferencia(float radio, float fase, unsigned int cantidad)
+{
+	vector<Vec3> puntos;
+	if (cantidad < 1) 
+    {
+        return puntos;
+    }
+	
+    float angulo = 2 * PI / cantidad;
+	for (unsigned int i = 0; i < cantidad; i++) 
+    {
+		puntos.push_back(Vec3(radio * cosf(i * angulo + fase), radio * sinf(i * angulo + fase), 0));
+	}
+
+	return puntos;
+}
 
 void crearEngranaje(int NDIENTES, float DEJE)
 {
@@ -292,6 +295,7 @@ void init()
 	glEnable(GL_DEPTH_TEST);
 	glCullFace(GL_BACK);
 	glDisable(GL_CULL_FACE);
+    
     glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
 	glDisable(GL_LIGHT1);
@@ -326,7 +330,7 @@ void display()
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-    gluLookAt(ojo[0], ojo[1], ojo[2], 0, 0, 0, 0, 1, 0); 
+    gluLookAt(ojo[0], radio * 0.35f, ojo[2], 0, 0, 0, 0, 1, 0); 
 
 	glPushAttrib(GL_ALL_ATTRIB_BITS);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -442,20 +446,19 @@ void onIdle()
         angManLarga += vManLarga * (tiempo_transcurrido/1000.0);
         
         angManCorta += vManCorta * (tiempo_transcurrido/1000.0);
-
-        antes = ahora;
     }
-    glutTimerFunc(1000/tasaFPS, onTimer, tasaFPS); 
+
+    antes = ahora;
     glutPostRedisplay();
 }
 
 void onTimer(int valor)
 {
     check = true;
-    onIdle();
 }
 
-int main(int argc, char** argv) // Programa principal
+// Programa principal, en VisualStudio cambiar el tipo del main de int a void si el compilador lo pide
+int main(int argc, char** argv) 
 {
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
