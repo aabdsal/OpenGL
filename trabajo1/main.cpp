@@ -45,7 +45,7 @@ static float angManLarga = 0.0f;
 static const float vManLarga = 2*PI/60.0f; // vuelta por minuto
 
 static float angManCorta = 0.0f;
-static const float vManCorta = 2*PI/3600.0f; // vuelta por minuto
+static const float vManCorta = 2*PI/3600.0f; // vuelta por hora
 
 vector<Vec3> puntosCircunferencia(float radio, float fase, unsigned int cantidad)
 {
